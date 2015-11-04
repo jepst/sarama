@@ -285,6 +285,50 @@ func TestAsyncProducerFailureRetry(t *testing.T) {
 	closeProducer(t, producer)
 }
 
+func TestAsyncProducerRepeatFailures(t *testing.T) {
+	broker := newMockBroker(t, 0)
+	broker.SetHandlerByMap(map[string]MockResponse{
+		"MetadataRequest": newMockMetadataResponse(t).
+			SetBroker(broker.Addr(), broker.BrokerID()).
+			SetLeader("my_topic", 0, broker.BrokerID()).
+			SetLeader("my_topic", 1, broker.BrokerID()),
+		"ProduceRequest": newMockProduceResponse(t).
+			SetError("my_topic", 0, ErrNotLeaderForPartition).
+			SetError("my_topic", 1, ErrNoError),
+	})
+
+	config := NewConfig()
+	config.Producer.Flush.Messages = 1
+	config.Producer.Return.Successes = true
+	config.Producer.Retry.Backoff = 0
+	config.Producer.Partitioner = NewManualPartitioner
+	producer, err := NewAsyncProducer([]string{broker.Addr()}, config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage), Partition: 1}
+	expectResults(t, producer, 1, 0)
+
+	done := make(chan none)
+	go func() {
+		expectResults(t, producer, 0, 1000000)
+		close(done)
+	}()
+
+	for i := 0; i < 100; i++ {
+		for i := 0; i < 10000; i++ {
+			producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage), Partition: 0}
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	<-done
+
+	broker.Close()
+	closeProducer(t, producer)
+}
+
 // If a Kafka broker becomes unavailable and then returns back in service, then
 // producer reconnects to it and continues sending messages.
 func TestAsyncProducerBrokerBounce(t *testing.T) {
