@@ -310,17 +310,20 @@ func TestAsyncProducerRepeatFailures(t *testing.T) {
 	producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage), Partition: 1}
 	expectResults(t, producer, 1, 0)
 
+	const iters = 1000
+	const msgs = 10000
+
 	done := make(chan none)
 	go func() {
-		expectResults(t, producer, 0, 1000000)
+		expectResults(t, producer, 0, iters*msgs)
 		close(done)
 	}()
 
-	for i := 0; i < 100; i++ {
-		for i := 0; i < 10000; i++ {
+	for i := 0; i < iters; i++ {
+		for i := 0; i < msgs; i++ {
 			producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage), Partition: 0}
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	<-done
