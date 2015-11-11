@@ -2,12 +2,12 @@ package sarama
 
 type OffsetFetchRequest struct {
 	ConsumerGroup string
-	Version       int16
+	IVersion       int16
 	partitions    map[string][]int32
 }
 
-func (r *OffsetFetchRequest) encode(pe packetEncoder) (err error) {
-	if r.Version < 0 || r.Version > 1 {
+func (r *OffsetFetchRequest) Encode(pe packetEncoder) (err error) {
+	if r.IVersion < 0 || r.IVersion > 1 {
 		return PacketEncodingError{"invalid or unsupported OffsetFetchRequest version field"}
 	}
 
@@ -28,7 +28,7 @@ func (r *OffsetFetchRequest) encode(pe packetEncoder) (err error) {
 	return nil
 }
 
-func (r *OffsetFetchRequest) decode(pd packetDecoder) (err error) {
+func (r *OffsetFetchRequest) Decode(pd packetDecoder) (err error) {
 	if r.ConsumerGroup, err = pd.getString(); err != nil {
 		return err
 	}
@@ -54,12 +54,12 @@ func (r *OffsetFetchRequest) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (r *OffsetFetchRequest) key() int16 {
+func (r *OffsetFetchRequest) Key() int16 {
 	return 9
 }
 
-func (r *OffsetFetchRequest) version() int16 {
-	return r.Version
+func (r *OffsetFetchRequest) Version() int16 {
+	return r.IVersion
 }
 
 func (r *OffsetFetchRequest) AddPartition(topic string, partitionID int32) {

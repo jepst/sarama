@@ -7,18 +7,18 @@ import (
 // MockResponse is a response builder interface it defines one method that
 // allows generating a response based on a request body.
 type MockResponse interface {
-	For(reqBody decoder) (res encoder)
+	For(reqBody Decoder) (res Encoder)
 }
 
 type mockWrapper struct {
-	res encoder
+	res Encoder
 }
 
-func (mw *mockWrapper) For(reqBody decoder) (res encoder) {
+func (mw *mockWrapper) For(reqBody Decoder) (res Encoder) {
 	return mw.res
 }
 
-func newMockWrapper(res encoder) *mockWrapper {
+func newMockWrapper(res Encoder) *mockWrapper {
 	return &mockWrapper{res: res}
 }
 
@@ -52,7 +52,7 @@ func (mmr *mockMetadataResponse) SetBroker(addr string, brokerID int32) *mockMet
 	return mmr
 }
 
-func (mor *mockMetadataResponse) For(reqBody decoder) encoder {
+func (mor *mockMetadataResponse) For(reqBody Decoder) Encoder {
 	metadataRequest := reqBody.(*MetadataRequest)
 	metadataResponse := &MetadataResponse{}
 	for addr, brokerID := range mor.brokers {
@@ -102,12 +102,12 @@ func (mor *mockOffsetResponse) SetOffset(topic string, partition int32, time, of
 	return mor
 }
 
-func (mor *mockOffsetResponse) For(reqBody decoder) encoder {
+func (mor *mockOffsetResponse) For(reqBody Decoder) Encoder {
 	offsetRequest := reqBody.(*OffsetRequest)
 	offsetResponse := &OffsetResponse{}
 	for topic, partitions := range offsetRequest.blocks {
 		for partition, block := range partitions {
-			offset := mor.getOffset(topic, partition, block.time)
+			offset := mor.getOffset(topic, partition, block.Time)
 			offsetResponse.AddTopicPartition(topic, partition, offset)
 		}
 	}
@@ -132,7 +132,7 @@ func (mor *mockOffsetResponse) getOffset(topic string, partition int32, time int
 
 // mockFetchResponse is a `FetchResponse` builder.
 type mockFetchResponse struct {
-	messages       map[string]map[int32]map[int64]Encoder
+	messages       map[string]map[int32]map[int64]IEncoder
 	highWaterMarks map[string]map[int32]int64
 	t              *testing.T
 	batchSize      int
@@ -140,22 +140,22 @@ type mockFetchResponse struct {
 
 func newMockFetchResponse(t *testing.T, batchSize int) *mockFetchResponse {
 	return &mockFetchResponse{
-		messages:       make(map[string]map[int32]map[int64]Encoder),
+		messages:       make(map[string]map[int32]map[int64]IEncoder),
 		highWaterMarks: make(map[string]map[int32]int64),
 		t:              t,
 		batchSize:      batchSize,
 	}
 }
 
-func (mfr *mockFetchResponse) SetMessage(topic string, partition int32, offset int64, msg Encoder) *mockFetchResponse {
+func (mfr *mockFetchResponse) SetMessage(topic string, partition int32, offset int64, msg IEncoder) *mockFetchResponse {
 	partitions := mfr.messages[topic]
 	if partitions == nil {
-		partitions = make(map[int32]map[int64]Encoder)
+		partitions = make(map[int32]map[int64]IEncoder)
 		mfr.messages[topic] = partitions
 	}
 	messages := partitions[partition]
 	if messages == nil {
-		messages = make(map[int64]Encoder)
+		messages = make(map[int64]IEncoder)
 		partitions[partition] = messages
 	}
 	messages[offset] = msg
@@ -172,12 +172,12 @@ func (mfr *mockFetchResponse) SetHighWaterMark(topic string, partition int32, of
 	return mfr
 }
 
-func (mfr *mockFetchResponse) For(reqBody decoder) encoder {
+func (mfr *mockFetchResponse) For(reqBody Decoder) Encoder {
 	fetchRequest := reqBody.(*FetchRequest)
 	res := &FetchResponse{}
 	for topic, partitions := range fetchRequest.blocks {
 		for partition, block := range partitions {
-			initialOffset := block.fetchOffset
+			initialOffset := block.FetchOffset
 			offset := initialOffset
 			maxOffset := initialOffset + int64(mfr.getMessageCount(topic, partition))
 			for i := 0; i < mfr.batchSize && offset < maxOffset; {
@@ -199,7 +199,7 @@ func (mfr *mockFetchResponse) For(reqBody decoder) encoder {
 	return res
 }
 
-func (mfr *mockFetchResponse) getMessage(topic string, partition int32, offset int64) Encoder {
+func (mfr *mockFetchResponse) getMessage(topic string, partition int32, offset int64) IEncoder {
 	partitions := mfr.messages[topic]
 	if partitions == nil {
 		return nil
@@ -254,7 +254,7 @@ func (mr *mockConsumerMetadataResponse) SetError(group string, kerror KError) *m
 	return mr
 }
 
-func (mr *mockConsumerMetadataResponse) For(reqBody decoder) encoder {
+func (mr *mockConsumerMetadataResponse) For(reqBody Decoder) Encoder {
 	req := reqBody.(*ConsumerMetadataRequest)
 	group := req.ConsumerGroup
 	res := &ConsumerMetadataResponse{}
@@ -296,7 +296,7 @@ func (mr *mockOffsetCommitResponse) SetError(group, topic string, partition int3
 	return mr
 }
 
-func (mr *mockOffsetCommitResponse) For(reqBody decoder) encoder {
+func (mr *mockOffsetCommitResponse) For(reqBody Decoder) Encoder {
 	req := reqBody.(*OffsetCommitRequest)
 	group := req.ConsumerGroup
 	res := &OffsetCommitResponse{}
@@ -347,7 +347,7 @@ func (mr *mockProduceResponse) SetError(topic string, partition int32, kerror KE
 	return mr
 }
 
-func (mr *mockProduceResponse) For(reqBody decoder) encoder {
+func (mr *mockProduceResponse) For(reqBody Decoder) Encoder {
 	req := reqBody.(*ProduceRequest)
 	res := &ProduceResponse{}
 	for topic, partitions := range req.msgSets {
@@ -398,7 +398,7 @@ func (mr *mockOffsetFetchResponse) SetOffset(group, topic string, partition int3
 	return mr
 }
 
-func (mr *mockOffsetFetchResponse) For(reqBody decoder) encoder {
+func (mr *mockOffsetFetchResponse) For(reqBody Decoder) Encoder {
 	req := reqBody.(*OffsetFetchRequest)
 	group := req.ConsumerGroup
 	res := &OffsetFetchResponse{}

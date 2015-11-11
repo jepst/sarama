@@ -1,21 +1,21 @@
 package sarama
 
 type fetchRequestBlock struct {
-	fetchOffset int64
-	maxBytes    int32
+	FetchOffset int64
+	MaxBytes    int32
 }
 
-func (f *fetchRequestBlock) encode(pe packetEncoder) error {
-	pe.putInt64(f.fetchOffset)
-	pe.putInt32(f.maxBytes)
+func (f *fetchRequestBlock) Encode(pe packetEncoder) error {
+	pe.putInt64(f.FetchOffset)
+	pe.putInt32(f.MaxBytes)
 	return nil
 }
 
-func (f *fetchRequestBlock) decode(pd packetDecoder) (err error) {
-	if f.fetchOffset, err = pd.getInt64(); err != nil {
+func (f *fetchRequestBlock) Decode(pd packetDecoder) (err error) {
+	if f.FetchOffset, err = pd.getInt64(); err != nil {
 		return err
 	}
-	if f.maxBytes, err = pd.getInt32(); err != nil {
+	if f.MaxBytes, err = pd.getInt32(); err != nil {
 		return err
 	}
 	return nil
@@ -27,7 +27,7 @@ type FetchRequest struct {
 	blocks      map[string]map[int32]*fetchRequestBlock
 }
 
-func (f *FetchRequest) encode(pe packetEncoder) (err error) {
+func (f *FetchRequest) Encode(pe packetEncoder) (err error) {
 	pe.putInt32(-1) // replica ID is always -1 for clients
 	pe.putInt32(f.MaxWaitTime)
 	pe.putInt32(f.MinBytes)
@@ -46,7 +46,7 @@ func (f *FetchRequest) encode(pe packetEncoder) (err error) {
 		}
 		for partition, block := range blocks {
 			pe.putInt32(partition)
-			err = block.encode(pe)
+			err = block.Encode(pe)
 			if err != nil {
 				return err
 			}
@@ -55,7 +55,7 @@ func (f *FetchRequest) encode(pe packetEncoder) (err error) {
 	return nil
 }
 
-func (f *FetchRequest) decode(pd packetDecoder) (err error) {
+func (f *FetchRequest) Decode(pd packetDecoder) (err error) {
 	if _, err = pd.getInt32(); err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (f *FetchRequest) decode(pd packetDecoder) (err error) {
 				return err
 			}
 			fetchBlock := &fetchRequestBlock{}
-			if err = fetchBlock.decode(pd); err != nil {
+			if err = fetchBlock.Decode(pd); err != nil {
 				return nil
 			}
 			f.blocks[topic][partition] = fetchBlock
@@ -98,11 +98,11 @@ func (f *FetchRequest) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (f *FetchRequest) key() int16 {
+func (f *FetchRequest) Key() int16 {
 	return 1
 }
 
-func (f *FetchRequest) version() int16 {
+func (f *FetchRequest) Version() int16 {
 	return 0
 }
 
@@ -116,8 +116,8 @@ func (f *FetchRequest) AddBlock(topic string, partitionID int32, fetchOffset int
 	}
 
 	tmp := new(fetchRequestBlock)
-	tmp.maxBytes = maxBytes
-	tmp.fetchOffset = fetchOffset
+	tmp.MaxBytes = maxBytes
+	tmp.FetchOffset = fetchOffset
 
 	f.blocks[topic][partitionID] = tmp
 }

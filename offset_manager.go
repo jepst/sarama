@@ -258,7 +258,7 @@ func (pom *partitionOffsetManager) selectBroker() error {
 
 func (pom *partitionOffsetManager) fetchInitialOffset(retries int) error {
 	request := new(OffsetFetchRequest)
-	request.Version = 1
+	request.IVersion = 1
 	request.ConsumerGroup = pom.parent.group
 	request.AddPartition(pom.topic, pom.partition)
 
@@ -461,7 +461,7 @@ func (bom *brokerOffsetManager) flushToBroker() {
 		switch err {
 		case ErrNoError:
 			block := request.blocks[s.topic][s.partition]
-			s.updateCommitted(block.offset, block.metadata)
+			s.updateCommitted(block.Offset, block.Metadata)
 			break
 		case ErrUnknownTopicOrPartition, ErrNotLeaderForPartition, ErrLeaderNotAvailable:
 			delete(bom.subscriptions, s)
@@ -476,7 +476,7 @@ func (bom *brokerOffsetManager) flushToBroker() {
 
 func (bom *brokerOffsetManager) constructRequest() *OffsetCommitRequest {
 	r := &OffsetCommitRequest{
-		Version:       1,
+		IVersion:       1,
 		ConsumerGroup: bom.parent.group,
 	}
 

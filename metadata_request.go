@@ -4,7 +4,7 @@ type MetadataRequest struct {
 	Topics []string
 }
 
-func (mr *MetadataRequest) encode(pe packetEncoder) error {
+func (mr *MetadataRequest) Encode(pe packetEncoder) error {
 	err := pe.putArrayLength(len(mr.Topics))
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func (mr *MetadataRequest) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (mr *MetadataRequest) decode(pd packetDecoder) error {
+func (mr *MetadataRequest) Decode(pd packetDecoder) error {
 	topicCount, err := pd.getArrayLength()
 	if err != nil {
 		return err
@@ -39,10 +39,10 @@ func (mr *MetadataRequest) decode(pd packetDecoder) error {
 	return nil
 }
 
-func (mr *MetadataRequest) key() int16 {
+func (mr *MetadataRequest) Key() int16 {
 	return 3
 }
 
-func (mr *MetadataRequest) version() int16 {
+func (mr *MetadataRequest) Version() int16 {
 	return 0
 }

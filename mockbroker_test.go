@@ -19,7 +19,7 @@ const (
 	expectationTimeout = 500 * time.Millisecond
 )
 
-type requestHandlerFunc func(req *request) (res encoder)
+type requestHandlerFunc func(req *Request) (res Encoder)
 
 // mockBroker is a mock Kafka broker. It consists of a TCP server on a
 // kernel-selected localhost port that can accept many connections. It reads
@@ -41,7 +41,7 @@ type mockBroker struct {
 	port         int32
 	closing      chan none
 	stopper      chan none
-	expectations chan encoder
+	expectations chan Encoder
 	listener     net.Listener
 	t            *testing.T
 	latency      time.Duration
@@ -51,8 +51,8 @@ type mockBroker struct {
 }
 
 type RequestResponse struct {
-	Request  requestBody
-	Response encoder
+	Request  RequestBody
+	Response Encoder
 }
 
 func (b *mockBroker) SetLatency(latency time.Duration) {
@@ -69,13 +69,13 @@ func (b *mockBroker) SetHandler(handler requestHandlerFunc) {
 }
 
 func (b *mockBroker) SetHandlerByMap(handlerMap map[string]MockResponse) {
-	b.SetHandler(func(req *request) (res encoder) {
-		reqTypeName := reflect.TypeOf(req.body).Elem().Name()
+	b.SetHandler(func(req *Request) (res Encoder) {
+		reqTypeName := reflect.TypeOf(req.Body).Elem().Name()
 		mockResponse := handlerMap[reqTypeName]
 		if mockResponse == nil {
 			return nil
 		}
-		return mockResponse.For(req.body)
+		return mockResponse.For(req.Body)
 	})
 }
 
@@ -166,7 +166,7 @@ func (b *mockBroker) handleRequests(conn net.Conn, idx int, wg *sync.WaitGroup) 
 
 		b.lock.Lock()
 		res := b.handler(req)
-		b.history = append(b.history, RequestResponse{req.body, res})
+		b.history = append(b.history, RequestResponse{req.Body, res})
 		b.lock.Unlock()
 
 		if res == nil {
@@ -175,7 +175,7 @@ func (b *mockBroker) handleRequests(conn net.Conn, idx int, wg *sync.WaitGroup) 
 		}
 		Logger.Printf("*** mockbroker/%d/%d: served %v -> %v", b.brokerID, idx, req, res)
 
-		encodedRes, err := encode(res)
+		encodedRes, err := Encode(res)
 		if err != nil {
 			b.serverError(err)
 			break
@@ -185,7 +185,7 @@ func (b *mockBroker) handleRequests(conn net.Conn, idx int, wg *sync.WaitGroup) 
 		}
 
 		binary.BigEndian.PutUint32(resHeader, uint32(len(encodedRes)+4))
-		binary.BigEndian.PutUint32(resHeader[4:], uint32(req.correlationID))
+		binary.BigEndian.PutUint32(resHeader[4:], uint32(req.CorrelationID))
 		if _, err = conn.Write(resHeader); err != nil {
 			b.serverError(err)
 			break
@@ -198,7 +198,7 @@ func (b *mockBroker) handleRequests(conn net.Conn, idx int, wg *sync.WaitGroup) 
 	Logger.Printf("*** mockbroker/%d/%d: connection closed, err=%v", b.BrokerID(), idx, err)
 }
 
-func (b *mockBroker) defaultRequestHandler(req *request) (res encoder) {
+func (b *mockBroker) defaultRequestHandler(req *Request) (res Encoder) {
 	select {
 	case res, ok := <-b.expectations:
 		if !ok {
@@ -244,7 +244,7 @@ func newMockBrokerAddr(t *testing.T, brokerID int32, addr string) *mockBroker {
 		stopper:      make(chan none),
 		t:            t,
 		brokerID:     brokerID,
-		expectations: make(chan encoder, 512),
+		expectations: make(chan Encoder, 512),
 	}
 	broker.handler = broker.defaultRequestHandler
 
@@ -268,6 +268,6 @@ func newMockBrokerAddr(t *testing.T, brokerID int32, addr string) *mockBroker {
 	return broker
 }
 
-func (b *mockBroker) Returns(e encoder) {
+func (b *mockBroker) Returns(e Encoder) {
 	b.expectations <- e
 }

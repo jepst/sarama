@@ -30,7 +30,7 @@ type mockEncoder struct {
 	bytes []byte
 }
 
-func (m mockEncoder) encode(pe packetEncoder) error {
+func (m mockEncoder) Encode(pe packetEncoder) error {
 	return pe.putRawBytes(m.bytes)
 }
 

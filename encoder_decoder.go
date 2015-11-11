@@ -4,12 +4,12 @@ import "fmt"
 
 // Encoder is the interface that wraps the basic Encode method.
 // Anything implementing Encoder can be turned into bytes using Kafka's encoding rules.
-type encoder interface {
-	encode(pe packetEncoder) error
+type Encoder interface {
+	Encode(pe packetEncoder) error
 }
 
 // Encode takes an Encoder and turns it into bytes.
-func encode(e encoder) ([]byte, error) {
+func Encode(e Encoder) ([]byte, error) {
 	if e == nil {
 		return nil, nil
 	}
@@ -17,7 +17,7 @@ func encode(e encoder) ([]byte, error) {
 	var prepEnc prepEncoder
 	var realEnc realEncoder
 
-	err := e.encode(&prepEnc)
+	err := e.Encode(&prepEnc)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func encode(e encoder) ([]byte, error) {
 	}
 
 	realEnc.raw = make([]byte, prepEnc.length)
-	err = e.encode(&realEnc)
+	err = e.Encode(&realEnc)
 	if err != nil {
 		return nil, err
 	}
@@ -37,19 +37,19 @@ func encode(e encoder) ([]byte, error) {
 
 // Decoder is the interface that wraps the basic Decode method.
 // Anything implementing Decoder can be extracted from bytes using Kafka's encoding rules.
-type decoder interface {
-	decode(pd packetDecoder) error
+type Decoder interface {
+	Decode(pd packetDecoder) error
 }
 
 // Decode takes bytes and a Decoder and fills the fields of the decoder from the bytes,
 // interpreted using Kafka's encoding rules.
-func decode(buf []byte, in decoder) error {
+func Decode(buf []byte, in Decoder) error {
 	if buf == nil {
 		return nil
 	}
 
 	helper := realDecoder{raw: buf}
-	err := in.decode(&helper)
+	err := in.Decode(&helper)
 	if err != nil {
 		return err
 	}

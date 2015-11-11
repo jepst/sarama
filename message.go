@@ -32,7 +32,7 @@ type Message struct {
 	compressedCache []byte
 }
 
-func (m *Message) encode(pe packetEncoder) error {
+func (m *Message) Encode(pe packetEncoder) error {
 	pe.push(&crc32Field{})
 
 	pe.putInt8(messageFormat)
@@ -81,7 +81,7 @@ func (m *Message) encode(pe packetEncoder) error {
 	return pe.pop()
 }
 
-func (m *Message) decode(pd packetDecoder) (err error) {
+func (m *Message) Decode(pd packetDecoder) (err error) {
 	err = pd.push(&crc32Field{})
 	if err != nil {
 		return err
@@ -149,5 +149,5 @@ func (m *Message) decode(pd packetDecoder) (err error) {
 func (m *Message) decodeSet() (err error) {
 	pd := realDecoder{raw: m.Value}
 	m.Set = &MessageSet{}
-	return m.Set.decode(&pd)
+	return m.Set.Decode(&pd)
 }

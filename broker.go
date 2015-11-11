@@ -23,14 +23,14 @@ type Broker struct {
 	lock          sync.Mutex
 	opened        int32
 
-	responses chan responsePromise
+	responses chan ResponsePromise
 	done      chan bool
 }
 
-type responsePromise struct {
-	correlationID int32
-	packets       chan []byte
-	errors        chan error
+type ResponsePromise struct {
+	CorrelationID int32
+	Packets       chan []byte
+	Errors        chan error
 }
 
 // NewBroker creates and returns a Broker targetting the given host:port address.
@@ -88,7 +88,7 @@ func (b *Broker) Open(conf *Config) error {
 
 		b.conf = conf
 		b.done = make(chan bool)
-		b.responses = make(chan responsePromise, b.conf.Net.MaxOpenRequests-1)
+		b.responses = make(chan ResponsePromise, b.conf.Net.MaxOpenRequests-1)
 
 		if b.id >= 0 {
 			Logger.Printf("Connected to broker at %s (registered as #%d)\n", b.addr, b.id)
@@ -239,7 +239,7 @@ func (b *Broker) FetchOffset(request *OffsetFetchRequest) (*OffsetFetchResponse,
 	return response, nil
 }
 
-func (b *Broker) send(rb requestBody, promiseResponse bool) (*responsePromise, error) {
+func (b *Broker) send(rb RequestBody, promiseResponse bool) (*ResponsePromise, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -250,8 +250,8 @@ func (b *Broker) send(rb requestBody, promiseResponse bool) (*responsePromise, e
 		return nil, ErrNotConnected
 	}
 
-	req := &request{correlationID: b.correlationID, clientID: b.conf.ClientID, body: rb}
-	buf, err := encode(req)
+	req := &Request{CorrelationID: b.correlationID, ClientID: b.conf.ClientID, Body: rb}
+	buf, err := Encode(req)
 	if err != nil {
 		return nil, err
 	}
@@ -271,13 +271,13 @@ func (b *Broker) send(rb requestBody, promiseResponse bool) (*responsePromise, e
 		return nil, nil
 	}
 
-	promise := responsePromise{req.correlationID, make(chan []byte), make(chan error)}
+	promise := ResponsePromise{req.CorrelationID, make(chan []byte), make(chan error)}
 	b.responses <- promise
 
 	return &promise, nil
 }
 
-func (b *Broker) sendAndReceive(req requestBody, res decoder) error {
+func (b *Broker) sendAndReceive(req RequestBody, res Decoder) error {
 	promise, err := b.send(req, res != nil)
 
 	if err != nil {
@@ -289,14 +289,14 @@ func (b *Broker) sendAndReceive(req requestBody, res decoder) error {
 	}
 
 	select {
-	case buf := <-promise.packets:
-		return decode(buf, res)
-	case err = <-promise.errors:
+	case buf := <-promise.Packets:
+		return Decode(buf, res)
+	case err = <-promise.Errors:
 		return err
 	}
 }
 
-func (b *Broker) decode(pd packetDecoder) (err error) {
+func (b *Broker) Decode(pd packetDecoder) (err error) {
 	b.id, err = pd.getInt32()
 	if err != nil {
 		return err
@@ -320,7 +320,7 @@ func (b *Broker) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (b *Broker) encode(pe packetEncoder) (err error) {
+func (b *Broker) Encode(pe packetEncoder) (err error) {
 
 	host, portstr, err := net.SplitHostPort(b.addr)
 	if err != nil {
@@ -348,48 +348,48 @@ func (b *Broker) responseReceiver() {
 	header := make([]byte, 8)
 	for response := range b.responses {
 		if dead != nil {
-			response.errors <- dead
+			response.Errors <- dead
 			continue
 		}
 
 		err := b.conn.SetReadDeadline(time.Now().Add(b.conf.Net.ReadTimeout))
 		if err != nil {
 			dead = err
-			response.errors <- err
+			response.Errors <- err
 			continue
 		}
 
 		_, err = io.ReadFull(b.conn, header)
 		if err != nil {
 			dead = err
-			response.errors <- err
+			response.Errors <- err
 			continue
 		}
 
-		decodedHeader := responseHeader{}
-		err = decode(header, &decodedHeader)
+		decodedHeader := ResponseHeader{}
+		err = Decode(header, &decodedHeader)
 		if err != nil {
 			dead = err
-			response.errors <- err
+			response.Errors <- err
 			continue
 		}
-		if decodedHeader.correlationID != response.correlationID {
+		if decodedHeader.CorrelationID != response.CorrelationID {
 			// TODO if decoded ID < cur ID, discard until we catch up
 			// TODO if decoded ID > cur ID, save it so when cur ID catches up we have a response
-			dead = PacketDecodingError{fmt.Sprintf("correlation ID didn't match, wanted %d, got %d", response.correlationID, decodedHeader.correlationID)}
-			response.errors <- dead
+			dead = PacketDecodingError{fmt.Sprintf("correlation ID didn't match, wanted %d, got %d", response.CorrelationID, decodedHeader.CorrelationID)}
+			response.Errors <- dead
 			continue
 		}
 
-		buf := make([]byte, decodedHeader.length-4)
+		buf := make([]byte, decodedHeader.Length-4)
 		_, err = io.ReadFull(b.conn, buf)
 		if err != nil {
 			dead = err
-			response.errors <- err
+			response.Errors <- err
 			continue
 		}
 
-		response.packets <- buf
+		response.Packets <- buf
 	}
 	close(b.done)
 }

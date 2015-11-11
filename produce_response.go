@@ -5,7 +5,7 @@ type ProduceResponseBlock struct {
 	Offset int64
 }
 
-func (pr *ProduceResponseBlock) decode(pd packetDecoder) (err error) {
+func (pr *ProduceResponseBlock) Decode(pd packetDecoder) (err error) {
 	tmp, err := pd.getInt16()
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ type ProduceResponse struct {
 	Blocks map[string]map[int32]*ProduceResponseBlock
 }
 
-func (pr *ProduceResponse) decode(pd packetDecoder) (err error) {
+func (pr *ProduceResponse) Decode(pd packetDecoder) (err error) {
 	numTopics, err := pd.getArrayLength()
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (pr *ProduceResponse) decode(pd packetDecoder) (err error) {
 			}
 
 			block := new(ProduceResponseBlock)
-			err = block.decode(pd)
+			err = block.Decode(pd)
 			if err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func (pr *ProduceResponse) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (pr *ProduceResponse) encode(pe packetEncoder) error {
+func (pr *ProduceResponse) Encode(pe packetEncoder) error {
 	err := pe.putArrayLength(len(pr.Blocks))
 	if err != nil {
 		return err

@@ -56,8 +56,8 @@ func safeAsyncClose(b *Broker) {
 // Encoder is a simple interface for any type that can be encoded as an array of bytes
 // in order to be sent as the key or value of a Kafka message. Length() is provided as an
 // optimization, and must return the same as len() on the result of Encode().
-type Encoder interface {
-	Encode() ([]byte, error)
+type IEncoder interface {
+	IEncode() ([]byte, error)
 	Length() int
 }
 
@@ -68,7 +68,7 @@ type Encoder interface {
 // as the Key or Value in a ProducerMessage.
 type StringEncoder string
 
-func (s StringEncoder) Encode() ([]byte, error) {
+func (s StringEncoder) IEncode() ([]byte, error) {
 	return []byte(s), nil
 }
 
@@ -80,7 +80,7 @@ func (s StringEncoder) Length() int {
 // as the Key or Value in a ProducerMessage.
 type ByteEncoder []byte
 
-func (b ByteEncoder) Encode() ([]byte, error) {
+func (b ByteEncoder) IEncode() ([]byte, error) {
 	return b, nil
 }
 

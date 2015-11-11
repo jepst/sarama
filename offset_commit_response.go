@@ -16,7 +16,7 @@ func (r *OffsetCommitResponse) AddError(topic string, partition int32, kerror KE
 	partitions[partition] = kerror
 }
 
-func (r *OffsetCommitResponse) encode(pe packetEncoder) error {
+func (r *OffsetCommitResponse) Encode(pe packetEncoder) error {
 	if err := pe.putArrayLength(len(r.Errors)); err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (r *OffsetCommitResponse) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (r *OffsetCommitResponse) decode(pd packetDecoder) (err error) {
+func (r *OffsetCommitResponse) Decode(pd packetDecoder) (err error) {
 	numTopics, err := pd.getArrayLength()
 	if err != nil || numTopics == 0 {
 		return err

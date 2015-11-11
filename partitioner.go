@@ -102,7 +102,7 @@ func (p *hashPartitioner) Partition(message *ProducerMessage, numPartitions int3
 	if message.Key == nil {
 		return p.random.Partition(message, numPartitions)
 	}
-	bytes, err := message.Key.Encode()
+	bytes, err := message.Key.IEncode()
 	if err != nil {
 		return -1, err
 	}

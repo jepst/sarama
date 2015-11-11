@@ -5,7 +5,7 @@ type OffsetResponseBlock struct {
 	Offsets []int64
 }
 
-func (r *OffsetResponseBlock) decode(pd packetDecoder) (err error) {
+func (r *OffsetResponseBlock) Decode(pd packetDecoder) (err error) {
 	tmp, err := pd.getInt16()
 	if err != nil {
 		return err
@@ -17,7 +17,7 @@ func (r *OffsetResponseBlock) decode(pd packetDecoder) (err error) {
 	return err
 }
 
-func (r *OffsetResponseBlock) encode(pe packetEncoder) (err error) {
+func (r *OffsetResponseBlock) Encode(pe packetEncoder) (err error) {
 	pe.putInt16(int16(r.Err))
 
 	return pe.putInt64Array(r.Offsets)
@@ -27,7 +27,7 @@ type OffsetResponse struct {
 	Blocks map[string]map[int32]*OffsetResponseBlock
 }
 
-func (r *OffsetResponse) decode(pd packetDecoder) (err error) {
+func (r *OffsetResponse) Decode(pd packetDecoder) (err error) {
 	numTopics, err := pd.getArrayLength()
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (r *OffsetResponse) decode(pd packetDecoder) (err error) {
 			}
 
 			block := new(OffsetResponseBlock)
-			err = block.decode(pd)
+			err = block.Decode(pd)
 			if err != nil {
 				return err
 			}
@@ -92,7 +92,7 @@ func (r *OffsetResponse) GetBlock(topic string, partition int32) *OffsetResponse
 0 0 0 0 0 1 1 1] <nil>
 
 */
-func (r *OffsetResponse) encode(pe packetEncoder) (err error) {
+func (r *OffsetResponse) Encode(pe packetEncoder) (err error) {
 	if err = pe.putArrayLength(len(r.Blocks)); err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (r *OffsetResponse) encode(pe packetEncoder) (err error) {
 		}
 		for partition, block := range partitions {
 			pe.putInt32(partition)
-			if err = block.encode(pe); err != nil {
+			if err = block.Encode(pe); err != nil {
 				return err
 			}
 		}

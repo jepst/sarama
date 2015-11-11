@@ -17,15 +17,15 @@ func (s *testRequestBody) version() int16 {
 	return 0xD2
 }
 
-func (s *testRequestBody) encode(pe packetEncoder) error {
+func (s *testRequestBody) Encode(pe packetEncoder) error {
 	return pe.putString("abc")
 }
 
 // not specific to request tests, just helper functions for testing structures that
 // implement the encoder or decoder interfaces that needed somewhere to live
 
-func testEncodable(t *testing.T, name string, in encoder, expect []byte) {
-	packet, err := encode(in)
+func testEncodable(t *testing.T, name string, in Encoder, expect []byte) {
+	packet, err := Encode(in)
 	if err != nil {
 		t.Error(err)
 	} else if !bytes.Equal(packet, expect) {
@@ -33,17 +33,17 @@ func testEncodable(t *testing.T, name string, in encoder, expect []byte) {
 	}
 }
 
-func testDecodable(t *testing.T, name string, out decoder, in []byte) {
-	err := decode(in, out)
+func testDecodable(t *testing.T, name string, out Decoder, in []byte) {
+	err := Decode(in, out)
 	if err != nil {
 		t.Error("Decoding", name, "failed:", err)
 	}
 }
 
-func testRequest(t *testing.T, name string, rb requestBody, expected []byte) {
+func testRequest(t *testing.T, name string, rb RequestBody, expected []byte) {
 	// Encoder request
-	req := &request{correlationID: 123, clientID: "foo", body: rb}
-	packet, err := encode(req)
+	req := &Request{CorrelationID: 123, ClientID: "foo", Body: rb}
+	packet, err := Encode(req)
 	headerSize := 14 + len("foo")
 	if err != nil {
 		t.Error(err)
@@ -54,23 +54,23 @@ func testRequest(t *testing.T, name string, rb requestBody, expected []byte) {
 	decoded, err := decodeRequest(bytes.NewReader(packet))
 	if err != nil {
 		t.Error("Failed to decode request", err)
-	} else if decoded.correlationID != 123 || decoded.clientID != "foo" {
+	} else if decoded.CorrelationID != 123 || decoded.ClientID != "foo" {
 		t.Errorf("Decoded header is not valid: %v", decoded)
-	} else if !reflect.DeepEqual(rb, decoded.body) {
+	} else if !reflect.DeepEqual(rb, decoded.Body) {
 		t.Errorf("Decoded request does not match the encoded one\nencoded: %v\ndecoded: %v", rb, decoded)
 	}
 }
 
-func testResponse(t *testing.T, name string, res encoder, expected []byte) {
-	encoded, err := encode(res)
+func testResponse(t *testing.T, name string, res Encoder, expected []byte) {
+	encoded, err := Encode(res)
 	if err != nil {
 		t.Error(err)
 	} else if expected != nil && !bytes.Equal(encoded, expected) {
 		t.Error("Encoding", name, "failed\ngot ", encoded, "\nwant", expected)
 	}
 
-	decoded := reflect.New(reflect.TypeOf(res).Elem()).Interface().(decoder)
-	if err := decode(encoded, decoded); err != nil {
+	decoded := reflect.New(reflect.TypeOf(res).Elem()).Interface().(Decoder)
+	if err := Decode(encoded, decoded); err != nil {
 		t.Error("Decoding", name, "failed:", err)
 	}
 

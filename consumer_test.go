@@ -342,8 +342,8 @@ func TestConsumerClosePartitionWithoutLeader(t *testing.T) {
 func TestConsumerShutsDownOutOfRange(t *testing.T) {
 	// Given
 	broker0 := newMockBroker(t, 0)
-	broker0.SetHandler(func(req *request) (res encoder) {
-		switch reqBody := req.body.(type) {
+	broker0.SetHandler(func(req *Request) (res Encoder) {
+		switch reqBody := req.Body.(type) {
 		case *MetadataRequest:
 			return newMockMetadataResponse(t).
 				SetBroker(broker0.Addr(), broker0.BrokerID()).
@@ -389,16 +389,16 @@ func TestConsumerExtraOffsets(t *testing.T) {
 	// Given
 	broker0 := newMockBroker(t, 0)
 	called := 0
-	broker0.SetHandler(func(req *request) (res encoder) {
-		switch req.body.(type) {
+	broker0.SetHandler(func(req *Request) (res Encoder) {
+		switch req.Body.(type) {
 		case *MetadataRequest:
 			return newMockMetadataResponse(t).
 				SetBroker(broker0.Addr(), broker0.BrokerID()).
-				SetLeader("my_topic", 0, broker0.BrokerID()).For(req.body)
+				SetLeader("my_topic", 0, broker0.BrokerID()).For(req.Body)
 		case *OffsetRequest:
 			return newMockOffsetResponse(t).
 				SetOffset("my_topic", 0, OffsetNewest, 1234).
-				SetOffset("my_topic", 0, OffsetOldest, 0).For(req.body)
+				SetOffset("my_topic", 0, OffsetOldest, 0).For(req.Body)
 		case *FetchRequest:
 			fetchResponse := &FetchResponse{}
 			called++
@@ -442,16 +442,16 @@ func TestConsumerNonSequentialOffsets(t *testing.T) {
 	// Given
 	broker0 := newMockBroker(t, 0)
 	called := 0
-	broker0.SetHandler(func(req *request) (res encoder) {
-		switch req.body.(type) {
+	broker0.SetHandler(func(req *Request) (res Encoder) {
+		switch req.Body.(type) {
 		case *MetadataRequest:
 			return newMockMetadataResponse(t).
 				SetBroker(broker0.Addr(), broker0.BrokerID()).
-				SetLeader("my_topic", 0, broker0.BrokerID()).For(req.body)
+				SetLeader("my_topic", 0, broker0.BrokerID()).For(req.Body)
 		case *OffsetRequest:
 			return newMockOffsetResponse(t).
 				SetOffset("my_topic", 0, OffsetNewest, 1234).
-				SetOffset("my_topic", 0, OffsetOldest, 0).For(req.body)
+				SetOffset("my_topic", 0, OffsetOldest, 0).For(req.Body)
 		case *FetchRequest:
 			called++
 			fetchResponse := &FetchResponse{}
@@ -585,8 +585,8 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 	})
 
 	// leader0 says no longer leader of partition 0
-	leader0.SetHandler(func(req *request) (res encoder) {
-		switch req.body.(type) {
+	leader0.SetHandler(func(req *Request) (res Encoder) {
+		switch req.Body.(type) {
 		case *FetchRequest:
 			fetchResponse := new(FetchResponse)
 			fetchResponse.AddError("my_topic", 0, ErrNotLeaderForPartition)
@@ -632,8 +632,8 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 		SetMessage("my_topic", 0, int64(7), testMsg).
 		SetMessage("my_topic", 0, int64(8), testMsg).
 		SetMessage("my_topic", 0, int64(9), testMsg)
-	leader1.SetHandler(func(req *request) (res encoder) {
-		switch reqBody := req.body.(type) {
+	leader1.SetHandler(func(req *Request) (res Encoder) {
+		switch reqBody := req.Body.(type) {
 		case *FetchRequest:
 			res := mockFetchResponse3.For(reqBody).(*FetchResponse)
 			res.AddError("my_topic", 1, ErrNotLeaderForPartition)

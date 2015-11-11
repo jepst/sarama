@@ -6,32 +6,32 @@ package sarama
 const ReceiveTime int64 = -1
 
 type offsetCommitRequestBlock struct {
-	offset    int64
-	timestamp int64
-	metadata  string
+	Offset    int64
+	Timestamp int64
+	Metadata  string
 }
 
-func (r *offsetCommitRequestBlock) encode(pe packetEncoder, version int16) error {
-	pe.putInt64(r.offset)
+func (r *offsetCommitRequestBlock) Encode(pe packetEncoder, version int16) error {
+	pe.putInt64(r.Offset)
 	if version == 1 {
-		pe.putInt64(r.timestamp)
-	} else if r.timestamp != 0 {
+		pe.putInt64(r.Timestamp)
+	} else if r.Timestamp != 0 {
 		Logger.Println("Non-zero timestamp specified for OffsetCommitRequest not v1, it will be ignored")
 	}
 
-	return pe.putString(r.metadata)
+	return pe.putString(r.Metadata)
 }
 
-func (r *offsetCommitRequestBlock) decode(pd packetDecoder, version int16) (err error) {
-	if r.offset, err = pd.getInt64(); err != nil {
+func (r *offsetCommitRequestBlock) Decode(pd packetDecoder, version int16) (err error) {
+	if r.Offset, err = pd.getInt64(); err != nil {
 		return err
 	}
 	if version == 1 {
-		if r.timestamp, err = pd.getInt64(); err != nil {
+		if r.Timestamp, err = pd.getInt64(); err != nil {
 			return err
 		}
 	}
-	r.metadata, err = pd.getString()
+	r.Metadata, err = pd.getString()
 	return err
 }
 
@@ -45,12 +45,12 @@ type OffsetCommitRequest struct {
 	// - 0 (kafka 0.8.1 and later)
 	// - 1 (kafka 0.8.2 and later)
 	// - 2 (kafka 0.8.3 and later)
-	Version int16
+	IVersion int16
 	blocks  map[string]map[int32]*offsetCommitRequestBlock
 }
 
-func (r *OffsetCommitRequest) encode(pe packetEncoder) error {
-	if r.Version < 0 || r.Version > 2 {
+func (r *OffsetCommitRequest) Encode(pe packetEncoder) error {
+	if r.IVersion < 0 || r.IVersion > 2 {
 		return PacketEncodingError{"invalid or unsupported OffsetCommitRequest version field"}
 	}
 
@@ -58,7 +58,7 @@ func (r *OffsetCommitRequest) encode(pe packetEncoder) error {
 		return err
 	}
 
-	if r.Version >= 1 {
+	if r.IVersion >= 1 {
 		pe.putInt32(r.ConsumerGroupGeneration)
 		if err := pe.putString(r.ConsumerID); err != nil {
 			return err
@@ -72,7 +72,7 @@ func (r *OffsetCommitRequest) encode(pe packetEncoder) error {
 		}
 	}
 
-	if r.Version >= 2 {
+	if r.IVersion >= 2 {
 		pe.putInt64(r.RetentionTime)
 	} else if r.RetentionTime != 0 {
 		Logger.Println("Non-zero RetentionTime specified for OffsetCommitRequest version <2, it will be ignored")
@@ -90,7 +90,7 @@ func (r *OffsetCommitRequest) encode(pe packetEncoder) error {
 		}
 		for partition, block := range partitions {
 			pe.putInt32(partition)
-			if err := block.encode(pe, r.Version); err != nil {
+			if err := block.Encode(pe, r.IVersion); err != nil {
 				return err
 			}
 		}
@@ -98,12 +98,12 @@ func (r *OffsetCommitRequest) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (r *OffsetCommitRequest) decode(pd packetDecoder) (err error) {
+func (r *OffsetCommitRequest) Decode(pd packetDecoder) (err error) {
 	if r.ConsumerGroup, err = pd.getString(); err != nil {
 		return err
 	}
 
-	if r.Version >= 1 {
+	if r.IVersion >= 1 {
 		if r.ConsumerGroupGeneration, err = pd.getInt32(); err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func (r *OffsetCommitRequest) decode(pd packetDecoder) (err error) {
 		}
 	}
 
-	if r.Version >= 2 {
+	if r.IVersion >= 2 {
 		if r.RetentionTime, err = pd.getInt64(); err != nil {
 			return err
 		}
@@ -142,7 +142,7 @@ func (r *OffsetCommitRequest) decode(pd packetDecoder) (err error) {
 				return err
 			}
 			block := &offsetCommitRequestBlock{}
-			if err := block.decode(pd, r.Version); err != nil {
+			if err := block.Decode(pd, r.IVersion); err != nil {
 				return err
 			}
 			r.blocks[topic][partition] = block
@@ -151,12 +151,12 @@ func (r *OffsetCommitRequest) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (r *OffsetCommitRequest) key() int16 {
+func (r *OffsetCommitRequest) Key() int16 {
 	return 8
 }
 
-func (r *OffsetCommitRequest) version() int16 {
-	return r.Version
+func (r *OffsetCommitRequest) Version() int16 {
+	return r.IVersion
 }
 
 func (r *OffsetCommitRequest) AddBlock(topic string, partitionID int32, offset int64, timestamp int64, metadata string) {

@@ -6,7 +6,7 @@ type FetchResponseBlock struct {
 	MsgSet              MessageSet
 }
 
-func (pr *FetchResponseBlock) decode(pd packetDecoder) (err error) {
+func (pr *FetchResponseBlock) Decode(pd packetDecoder) (err error) {
 	tmp, err := pd.getInt16()
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (pr *FetchResponseBlock) decode(pd packetDecoder) (err error) {
 	if err != nil {
 		return err
 	}
-	err = (&pr.MsgSet).decode(msgSetDecoder)
+	err = (&pr.MsgSet).Decode(msgSetDecoder)
 
 	return err
 }
@@ -36,20 +36,20 @@ type FetchResponse struct {
 	Blocks map[string]map[int32]*FetchResponseBlock
 }
 
-func (pr *FetchResponseBlock) encode(pe packetEncoder) (err error) {
+func (pr *FetchResponseBlock) Encode(pe packetEncoder) (err error) {
 	pe.putInt16(int16(pr.Err))
 
 	pe.putInt64(pr.HighWaterMarkOffset)
 
 	pe.push(&lengthField{})
-	err = pr.MsgSet.encode(pe)
+	err = pr.MsgSet.Encode(pe)
 	if err != nil {
 		return err
 	}
 	return pe.pop()
 }
 
-func (fr *FetchResponse) decode(pd packetDecoder) (err error) {
+func (fr *FetchResponse) Decode(pd packetDecoder) (err error) {
 	numTopics, err := pd.getArrayLength()
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (fr *FetchResponse) decode(pd packetDecoder) (err error) {
 			}
 
 			block := new(FetchResponseBlock)
-			err = block.decode(pd)
+			err = block.Decode(pd)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func (fr *FetchResponse) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (fr *FetchResponse) encode(pe packetEncoder) (err error) {
+func (fr *FetchResponse) Encode(pe packetEncoder) (err error) {
 	err = pe.putArrayLength(len(fr.Blocks))
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (fr *FetchResponse) encode(pe packetEncoder) (err error) {
 
 		for id, block := range partitions {
 			pe.putInt32(id)
-			err = block.encode(pe)
+			err = block.Encode(pe)
 			if err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ func (fr *FetchResponse) AddError(topic string, partition int32, err KError) {
 	frb.Err = err
 }
 
-func (fr *FetchResponse) AddMessage(topic string, partition int32, key, value Encoder, offset int64) {
+func (fr *FetchResponse) AddMessage(topic string, partition int32, key, value IEncoder, offset int64) {
 	if fr.Blocks == nil {
 		fr.Blocks = make(map[string]map[int32]*FetchResponseBlock)
 	}
@@ -162,10 +162,10 @@ func (fr *FetchResponse) AddMessage(topic string, partition int32, key, value En
 	var kb []byte
 	var vb []byte
 	if key != nil {
-		kb, _ = key.Encode()
+		kb, _ = key.IEncode()
 	}
 	if value != nil {
-		vb, _ = value.Encode()
+		vb, _ = value.IEncode()
 	}
 	msg := &Message{Key: kb, Value: vb}
 	msgBlock := &MessageBlock{Msg: msg, Offset: offset}

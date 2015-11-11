@@ -6,36 +6,36 @@ import (
 	"io"
 )
 
-type requestBody interface {
-	encoder
-	decoder
-	key() int16
-	version() int16
+type RequestBody interface {
+	Encoder
+	Decoder
+	Key() int16
+	Version() int16
 }
 
-type request struct {
-	correlationID int32
-	clientID      string
-	body          requestBody
+type Request struct {
+	CorrelationID int32
+	ClientID      string
+	Body          RequestBody
 }
 
-func (r *request) encode(pe packetEncoder) (err error) {
+func (r *Request) Encode(pe packetEncoder) (err error) {
 	pe.push(&lengthField{})
-	pe.putInt16(r.body.key())
-	pe.putInt16(r.body.version())
-	pe.putInt32(r.correlationID)
-	err = pe.putString(r.clientID)
+	pe.putInt16(r.Body.Key())
+	pe.putInt16(r.Body.Version())
+	pe.putInt32(r.CorrelationID)
+	err = pe.putString(r.ClientID)
 	if err != nil {
 		return err
 	}
-	err = r.body.encode(pe)
+	err = r.Body.Encode(pe)
 	if err != nil {
 		return err
 	}
 	return pe.pop()
 }
 
-func (r *request) decode(pd packetDecoder) (err error) {
+func (r *Request) Decode(pd packetDecoder) (err error) {
 	var key int16
 	if key, err = pd.getInt16(); err != nil {
 		return err
@@ -44,19 +44,19 @@ func (r *request) decode(pd packetDecoder) (err error) {
 	if version, err = pd.getInt16(); err != nil {
 		return err
 	}
-	if r.correlationID, err = pd.getInt32(); err != nil {
+	if r.CorrelationID, err = pd.getInt32(); err != nil {
 		return err
 	}
-	r.clientID, err = pd.getString()
+	r.ClientID, err = pd.getString()
 
-	r.body = allocateBody(key, version)
-	if r.body == nil {
+	r.Body = allocateBody(key, version)
+	if r.Body == nil {
 		return PacketDecodingError{fmt.Sprintf("unknown request key (%d)", key)}
 	}
-	return r.body.decode(pd)
+	return r.Body.Decode(pd)
 }
 
-func decodeRequest(r io.Reader) (req *request, err error) {
+func decodeRequest(r io.Reader) (req *Request, err error) {
 	lengthBytes := make([]byte, 4)
 	if _, err := io.ReadFull(r, lengthBytes); err != nil {
 		return nil, err
@@ -72,14 +72,14 @@ func decodeRequest(r io.Reader) (req *request, err error) {
 		return nil, err
 	}
 
-	req = &request{}
-	if err := decode(encodedReq, req); err != nil {
+	req = &Request{}
+	if err := Decode(encodedReq, req); err != nil {
 		return nil, err
 	}
 	return req, nil
 }
 
-func allocateBody(key, version int16) requestBody {
+func allocateBody(key, version int16) RequestBody {
 	switch key {
 	case 0:
 		return &ProduceRequest{}
@@ -90,7 +90,7 @@ func allocateBody(key, version int16) requestBody {
 	case 3:
 		return &MetadataRequest{}
 	case 8:
-		return &OffsetCommitRequest{Version: version}
+		return &OffsetCommitRequest{IVersion: version}
 	case 9:
 		return &OffsetFetchRequest{}
 	case 10:

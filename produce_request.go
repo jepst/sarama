@@ -22,7 +22,7 @@ type ProduceRequest struct {
 	msgSets      map[string]map[int32]*MessageSet
 }
 
-func (p *ProduceRequest) encode(pe packetEncoder) error {
+func (p *ProduceRequest) Encode(pe packetEncoder) error {
 	pe.putInt16(int16(p.RequiredAcks))
 	pe.putInt32(p.Timeout)
 	err := pe.putArrayLength(len(p.msgSets))
@@ -41,7 +41,7 @@ func (p *ProduceRequest) encode(pe packetEncoder) error {
 		for id, msgSet := range partitions {
 			pe.putInt32(id)
 			pe.push(&lengthField{})
-			err = msgSet.encode(pe)
+			err = msgSet.Encode(pe)
 			if err != nil {
 				return err
 			}
@@ -54,7 +54,7 @@ func (p *ProduceRequest) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (p *ProduceRequest) decode(pd packetDecoder) error {
+func (p *ProduceRequest) Decode(pd packetDecoder) error {
 	requiredAcks, err := pd.getInt16()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (p *ProduceRequest) decode(pd packetDecoder) error {
 				return err
 			}
 			msgSet := &MessageSet{}
-			err = msgSet.decode(msgSetDecoder)
+			err = msgSet.Decode(msgSetDecoder)
 			if err != nil {
 				return err
 			}
@@ -105,11 +105,11 @@ func (p *ProduceRequest) decode(pd packetDecoder) error {
 	return nil
 }
 
-func (p *ProduceRequest) key() int16 {
+func (p *ProduceRequest) Key() int16 {
 	return 0
 }
 
-func (p *ProduceRequest) version() int16 {
+func (p *ProduceRequest) Version() int16 {
 	return 0
 }
 

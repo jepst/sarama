@@ -86,7 +86,7 @@ func (f flakyEncoder) Length() int {
 	return len(TestMessage)
 }
 
-func (f flakyEncoder) Encode() ([]byte, error) {
+func (f flakyEncoder) IEncode() ([]byte, error) {
 	if !bool(f) {
 		return nil, errors.New("flaky encoding error")
 	}

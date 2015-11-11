@@ -114,10 +114,10 @@ type ProducerMessage struct {
 	Topic string // The Kafka topic for this message.
 	// The partitioning key for this message. Pre-existing Encoders include
 	// StringEncoder and ByteEncoder.
-	Key Encoder
+	Key IEncoder
 	// The actual message to store in Kafka. Pre-existing Encoders include
 	// StringEncoder and ByteEncoder.
-	Value Encoder
+	Value IEncoder
 
 	// This field is used to hold arbitrary data you wish to include so it
 	// will be available when receiving on the Successes and Errors channels.
@@ -805,13 +805,13 @@ func (ps *produceSet) add(msg *ProducerMessage) error {
 	var key, val []byte
 
 	if msg.Key != nil {
-		if key, err = msg.Key.Encode(); err != nil {
+		if key, err = msg.Key.IEncode(); err != nil {
 			return err
 		}
 	}
 
 	if msg.Value != nil {
-		if val, err = msg.Value.Encode(); err != nil {
+		if val, err = msg.Value.IEncode(); err != nil {
 			return err
 		}
 	}
@@ -854,7 +854,7 @@ func (ps *produceSet) buildRequest() *ProduceRequest {
 				// and sent as the payload of a single fake "message" with the appropriate codec
 				// set and no key. When the server sees a message with a compression codec, it
 				// decompresses the payload and treats the result as its message set.
-				payload, err := encode(set.setToSend)
+				payload, err := Encode(set.setToSend)
 				if err != nil {
 					Logger.Println(err) // if this happens, it's basically our fault.
 					panic(err)

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Shopify/sarama"
+	"sarama"
 
 	"crypto/tls"
 	"crypto/x509"
@@ -157,7 +157,7 @@ func (ale *accessLogEntry) Length() int {
 	return len(ale.encoded)
 }
 
-func (ale *accessLogEntry) Encode() ([]byte, error) {
+func (ale *accessLogEntry) IEncode() ([]byte, error) {
 	ale.ensureEncoded()
 	return ale.encoded, ale.err
 }

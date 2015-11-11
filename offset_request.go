@@ -1,21 +1,21 @@
 package sarama
 
 type offsetRequestBlock struct {
-	time       int64
-	maxOffsets int32
+	Time       int64
+	MaxOffsets int32
 }
 
-func (r *offsetRequestBlock) encode(pe packetEncoder) error {
-	pe.putInt64(int64(r.time))
-	pe.putInt32(r.maxOffsets)
+func (r *offsetRequestBlock) Encode(pe packetEncoder) error {
+	pe.putInt64(int64(r.Time))
+	pe.putInt32(r.MaxOffsets)
 	return nil
 }
 
-func (r *offsetRequestBlock) decode(pd packetDecoder) (err error) {
-	if r.time, err = pd.getInt64(); err != nil {
+func (r *offsetRequestBlock) Decode(pd packetDecoder) (err error) {
+	if r.Time, err = pd.getInt64(); err != nil {
 		return err
 	}
-	if r.maxOffsets, err = pd.getInt32(); err != nil {
+	if r.MaxOffsets, err = pd.getInt32(); err != nil {
 		return err
 	}
 	return nil
@@ -25,7 +25,7 @@ type OffsetRequest struct {
 	blocks map[string]map[int32]*offsetRequestBlock
 }
 
-func (r *OffsetRequest) encode(pe packetEncoder) error {
+func (r *OffsetRequest) Encode(pe packetEncoder) error {
 	pe.putInt32(-1) // replica ID is always -1 for clients
 	err := pe.putArrayLength(len(r.blocks))
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *OffsetRequest) encode(pe packetEncoder) error {
 		}
 		for partition, block := range partitions {
 			pe.putInt32(partition)
-			if err = block.encode(pe); err != nil {
+			if err = block.Encode(pe); err != nil {
 				return err
 			}
 		}
@@ -50,7 +50,7 @@ func (r *OffsetRequest) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (r *OffsetRequest) decode(pd packetDecoder) error {
+func (r *OffsetRequest) Decode(pd packetDecoder) error {
 	// Ignore replica ID
 	if _, err := pd.getInt32(); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (r *OffsetRequest) decode(pd packetDecoder) error {
 				return err
 			}
 			block := &offsetRequestBlock{}
-			if err := block.decode(pd); err != nil {
+			if err := block.Decode(pd); err != nil {
 				return err
 			}
 			r.blocks[topic][partition] = block
@@ -88,11 +88,11 @@ func (r *OffsetRequest) decode(pd packetDecoder) error {
 	return nil
 }
 
-func (r *OffsetRequest) key() int16 {
+func (r *OffsetRequest) Key() int16 {
 	return 2
 }
 
-func (r *OffsetRequest) version() int16 {
+func (r *OffsetRequest) Version() int16 {
 	return 0
 }
 
@@ -106,8 +106,8 @@ func (r *OffsetRequest) AddBlock(topic string, partitionID int32, time int64, ma
 	}
 
 	tmp := new(offsetRequestBlock)
-	tmp.time = time
-	tmp.maxOffsets = maxOffsets
+	tmp.Time = time
+	tmp.MaxOffsets = maxOffsets
 
 	r.blocks[topic][partitionID] = tmp
 }

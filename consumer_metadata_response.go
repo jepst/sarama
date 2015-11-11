@@ -13,7 +13,7 @@ type ConsumerMetadataResponse struct {
 	CoordinatorPort int32  // deprecated: use Coordinator.Addr()
 }
 
-func (r *ConsumerMetadataResponse) decode(pd packetDecoder) (err error) {
+func (r *ConsumerMetadataResponse) Decode(pd packetDecoder) (err error) {
 	tmp, err := pd.getInt16()
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func (r *ConsumerMetadataResponse) decode(pd packetDecoder) (err error) {
 	r.Err = KError(tmp)
 
 	coordinator := new(Broker)
-	if err := coordinator.decode(pd); err != nil {
+	if err := coordinator.Decode(pd); err != nil {
 		return err
 	}
 	if coordinator.addr == ":0" {
@@ -46,7 +46,7 @@ func (r *ConsumerMetadataResponse) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (r *ConsumerMetadataResponse) encode(pe packetEncoder) error {
+func (r *ConsumerMetadataResponse) Encode(pe packetEncoder) error {
 	pe.putInt16(int16(r.Err))
 	if r.Coordinator != nil {
 		host, portstr, err := net.SplitHostPort(r.Coordinator.Addr())

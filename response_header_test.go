@@ -9,13 +9,13 @@ var (
 )
 
 func TestResponseHeader(t *testing.T) {
-	header := responseHeader{}
+	header := ResponseHeader{}
 
 	testDecodable(t, "response header", &header, responseHeaderBytes)
-	if header.length != 0xf00 {
-		t.Error("Decoding header length failed, got", header.length)
+	if header.Length != 0xf00 {
+		t.Error("Decoding header length failed, got", header.Length)
 	}
-	if header.correlationID != 0x0abbccff {
-		t.Error("Decoding header correlation id failed, got", header.correlationID)
+	if header.CorrelationID != 0x0abbccff {
+		t.Error("Decoding header correlation id failed, got", header.CorrelationID)
 	}
 }

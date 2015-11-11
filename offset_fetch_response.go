@@ -6,7 +6,7 @@ type OffsetFetchResponseBlock struct {
 	Err      KError
 }
 
-func (r *OffsetFetchResponseBlock) decode(pd packetDecoder) (err error) {
+func (r *OffsetFetchResponseBlock) Decode(pd packetDecoder) (err error) {
 	r.Offset, err = pd.getInt64()
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func (r *OffsetFetchResponseBlock) decode(pd packetDecoder) (err error) {
 	return nil
 }
 
-func (r *OffsetFetchResponseBlock) encode(pe packetEncoder) (err error) {
+func (r *OffsetFetchResponseBlock) Encode(pe packetEncoder) (err error) {
 	pe.putInt64(r.Offset)
 
 	err = pe.putString(r.Metadata)
@@ -43,7 +43,7 @@ type OffsetFetchResponse struct {
 	Blocks map[string]map[int32]*OffsetFetchResponseBlock
 }
 
-func (r *OffsetFetchResponse) encode(pe packetEncoder) error {
+func (r *OffsetFetchResponse) Encode(pe packetEncoder) error {
 	if err := pe.putArrayLength(len(r.Blocks)); err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (r *OffsetFetchResponse) encode(pe packetEncoder) error {
 		}
 		for partition, block := range partitions {
 			pe.putInt32(partition)
-			if err := block.encode(pe); err != nil {
+			if err := block.Encode(pe); err != nil {
 				return err
 			}
 		}
@@ -64,7 +64,7 @@ func (r *OffsetFetchResponse) encode(pe packetEncoder) error {
 	return nil
 }
 
-func (r *OffsetFetchResponse) decode(pd packetDecoder) (err error) {
+func (r *OffsetFetchResponse) Decode(pd packetDecoder) (err error) {
 	numTopics, err := pd.getArrayLength()
 	if err != nil || numTopics == 0 {
 		return err
@@ -95,7 +95,7 @@ func (r *OffsetFetchResponse) decode(pd packetDecoder) (err error) {
 			}
 
 			block := new(OffsetFetchResponseBlock)
-			err = block.decode(pd)
+			err = block.Decode(pd)
 			if err != nil {
 				return err
 			}
