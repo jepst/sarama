@@ -19,3 +19,9 @@ func (r *ResponseHeader) Decode(pd packetDecoder) (err error) {
 	r.CorrelationID, err = pd.getInt32()
 	return err
 }
+
+func (r *ResponseHeader) Encode(pe packetEncoder) (err error) {
+	pe.putInt32(r.Length)
+	pe.putInt32(r.CorrelationID)
+	return nil
+}

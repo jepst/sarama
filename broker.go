@@ -144,6 +144,10 @@ func (b *Broker) ID() int32 {
 	return b.id
 }
 
+func (b *Broker) SetID(id int32) {
+	b.id = id
+}
+
 // Addr returns the broker address as either retrieved from Kafka's metadata or passed to NewBroker.
 func (b *Broker) Addr() string {
 	return b.addr

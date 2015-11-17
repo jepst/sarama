@@ -56,7 +56,7 @@ func (r *Request) Decode(pd packetDecoder) (err error) {
 	return r.Body.Decode(pd)
 }
 
-func decodeRequest(r io.Reader) (req *Request, err error) {
+func DecodeRequest(r io.Reader) (req *Request, err error) {
 	lengthBytes := make([]byte, 4)
 	if _, err := io.ReadFull(r, lengthBytes); err != nil {
 		return nil, err
