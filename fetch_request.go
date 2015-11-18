@@ -24,18 +24,18 @@ func (f *fetchRequestBlock) Decode(pd packetDecoder) (err error) {
 type FetchRequest struct {
 	MaxWaitTime int32
 	MinBytes    int32
-	blocks      map[string]map[int32]*fetchRequestBlock
+	Blocks      map[string]map[int32]*fetchRequestBlock
 }
 
 func (f *FetchRequest) Encode(pe packetEncoder) (err error) {
 	pe.putInt32(-1) // replica ID is always -1 for clients
 	pe.putInt32(f.MaxWaitTime)
 	pe.putInt32(f.MinBytes)
-	err = pe.putArrayLength(len(f.blocks))
+	err = pe.putArrayLength(len(f.Blocks))
 	if err != nil {
 		return err
 	}
-	for topic, blocks := range f.blocks {
+	for topic, blocks := range f.Blocks {
 		err = pe.putString(topic)
 		if err != nil {
 			return err
@@ -72,7 +72,7 @@ func (f *FetchRequest) Decode(pd packetDecoder) (err error) {
 	if topicCount == 0 {
 		return nil
 	}
-	f.blocks = make(map[string]map[int32]*fetchRequestBlock)
+	f.Blocks = make(map[string]map[int32]*fetchRequestBlock)
 	for i := 0; i < topicCount; i++ {
 		topic, err := pd.getString()
 		if err != nil {
@@ -82,7 +82,7 @@ func (f *FetchRequest) Decode(pd packetDecoder) (err error) {
 		if err != nil {
 			return err
 		}
-		f.blocks[topic] = make(map[int32]*fetchRequestBlock)
+		f.Blocks[topic] = make(map[int32]*fetchRequestBlock)
 		for j := 0; j < partitionCount; j++ {
 			partition, err := pd.getInt32()
 			if err != nil {
@@ -92,7 +92,7 @@ func (f *FetchRequest) Decode(pd packetDecoder) (err error) {
 			if err = fetchBlock.Decode(pd); err != nil {
 				return nil
 			}
-			f.blocks[topic][partition] = fetchBlock
+			f.Blocks[topic][partition] = fetchBlock
 		}
 	}
 	return nil
@@ -107,17 +107,17 @@ func (f *FetchRequest) Version() int16 {
 }
 
 func (f *FetchRequest) AddBlock(topic string, partitionID int32, fetchOffset int64, maxBytes int32) {
-	if f.blocks == nil {
-		f.blocks = make(map[string]map[int32]*fetchRequestBlock)
+	if f.Blocks == nil {
+		f.Blocks = make(map[string]map[int32]*fetchRequestBlock)
 	}
 
-	if f.blocks[topic] == nil {
-		f.blocks[topic] = make(map[int32]*fetchRequestBlock)
+	if f.Blocks[topic] == nil {
+		f.Blocks[topic] = make(map[int32]*fetchRequestBlock)
 	}
 
 	tmp := new(fetchRequestBlock)
 	tmp.MaxBytes = maxBytes
 	tmp.FetchOffset = fetchOffset
 
-	f.blocks[topic][partitionID] = tmp
+	f.Blocks[topic][partitionID] = tmp
 }

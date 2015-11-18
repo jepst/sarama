@@ -46,7 +46,7 @@ type OffsetCommitRequest struct {
 	// - 1 (kafka 0.8.2 and later)
 	// - 2 (kafka 0.8.3 and later)
 	IVersion int16
-	blocks  map[string]map[int32]*offsetCommitRequestBlock
+	Blocks  map[string]map[int32]*offsetCommitRequestBlock
 }
 
 func (r *OffsetCommitRequest) Encode(pe packetEncoder) error {
@@ -78,10 +78,10 @@ func (r *OffsetCommitRequest) Encode(pe packetEncoder) error {
 		Logger.Println("Non-zero RetentionTime specified for OffsetCommitRequest version <2, it will be ignored")
 	}
 
-	if err := pe.putArrayLength(len(r.blocks)); err != nil {
+	if err := pe.putArrayLength(len(r.Blocks)); err != nil {
 		return err
 	}
-	for topic, partitions := range r.blocks {
+	for topic, partitions := range r.Blocks {
 		if err := pe.putString(topic); err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func (r *OffsetCommitRequest) Decode(pd packetDecoder) (err error) {
 	if topicCount == 0 {
 		return nil
 	}
-	r.blocks = make(map[string]map[int32]*offsetCommitRequestBlock)
+	r.Blocks = make(map[string]map[int32]*offsetCommitRequestBlock)
 	for i := 0; i < topicCount; i++ {
 		topic, err := pd.getString()
 		if err != nil {
@@ -135,7 +135,7 @@ func (r *OffsetCommitRequest) Decode(pd packetDecoder) (err error) {
 		if err != nil {
 			return err
 		}
-		r.blocks[topic] = make(map[int32]*offsetCommitRequestBlock)
+		r.Blocks[topic] = make(map[int32]*offsetCommitRequestBlock)
 		for j := 0; j < partitionCount; j++ {
 			partition, err := pd.getInt32()
 			if err != nil {
@@ -145,7 +145,7 @@ func (r *OffsetCommitRequest) Decode(pd packetDecoder) (err error) {
 			if err := block.Decode(pd, r.IVersion); err != nil {
 				return err
 			}
-			r.blocks[topic][partition] = block
+			r.Blocks[topic][partition] = block
 		}
 	}
 	return nil
@@ -160,13 +160,13 @@ func (r *OffsetCommitRequest) Version() int16 {
 }
 
 func (r *OffsetCommitRequest) AddBlock(topic string, partitionID int32, offset int64, timestamp int64, metadata string) {
-	if r.blocks == nil {
-		r.blocks = make(map[string]map[int32]*offsetCommitRequestBlock)
+	if r.Blocks == nil {
+		r.Blocks = make(map[string]map[int32]*offsetCommitRequestBlock)
 	}
 
-	if r.blocks[topic] == nil {
-		r.blocks[topic] = make(map[int32]*offsetCommitRequestBlock)
+	if r.Blocks[topic] == nil {
+		r.Blocks[topic] = make(map[int32]*offsetCommitRequestBlock)
 	}
 
-	r.blocks[topic][partitionID] = &offsetCommitRequestBlock{offset, timestamp, metadata}
+	r.Blocks[topic][partitionID] = &offsetCommitRequestBlock{offset, timestamp, metadata}
 }

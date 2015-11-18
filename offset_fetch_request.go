@@ -3,7 +3,7 @@ package sarama
 type OffsetFetchRequest struct {
 	ConsumerGroup string
 	IVersion       int16
-	partitions    map[string][]int32
+	Partitions    map[string][]int32
 }
 
 func (r *OffsetFetchRequest) Encode(pe packetEncoder) (err error) {
@@ -14,10 +14,10 @@ func (r *OffsetFetchRequest) Encode(pe packetEncoder) (err error) {
 	if err = pe.putString(r.ConsumerGroup); err != nil {
 		return err
 	}
-	if err = pe.putArrayLength(len(r.partitions)); err != nil {
+	if err = pe.putArrayLength(len(r.Partitions)); err != nil {
 		return err
 	}
-	for topic, partitions := range r.partitions {
+	for topic, partitions := range r.Partitions {
 		if err = pe.putString(topic); err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ func (r *OffsetFetchRequest) Decode(pd packetDecoder) (err error) {
 	if partitionCount == 0 {
 		return nil
 	}
-	r.partitions = make(map[string][]int32)
+	r.Partitions = make(map[string][]int32)
 	for i := 0; i < partitionCount; i++ {
 		topic, err := pd.getString()
 		if err != nil {
@@ -49,7 +49,7 @@ func (r *OffsetFetchRequest) Decode(pd packetDecoder) (err error) {
 		if err != nil {
 			return err
 		}
-		r.partitions[topic] = partitions
+		r.Partitions[topic] = partitions
 	}
 	return nil
 }
@@ -63,9 +63,9 @@ func (r *OffsetFetchRequest) Version() int16 {
 }
 
 func (r *OffsetFetchRequest) AddPartition(topic string, partitionID int32) {
-	if r.partitions == nil {
-		r.partitions = make(map[string][]int32)
+	if r.Partitions == nil {
+		r.Partitions = make(map[string][]int32)
 	}
 
-	r.partitions[topic] = append(r.partitions[topic], partitionID)
+	r.Partitions[topic] = append(r.Partitions[topic], partitionID)
 }

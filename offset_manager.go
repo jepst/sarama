@@ -438,7 +438,7 @@ func (bom *brokerOffsetManager) flushToBroker() {
 	}
 
 	for s := range bom.subscriptions {
-		if request.blocks[s.topic] == nil || request.blocks[s.topic][s.partition] == nil {
+		if request.Blocks[s.topic] == nil || request.Blocks[s.topic][s.partition] == nil {
 			continue
 		}
 
@@ -460,7 +460,7 @@ func (bom *brokerOffsetManager) flushToBroker() {
 
 		switch err {
 		case ErrNoError:
-			block := request.blocks[s.topic][s.partition]
+			block := request.Blocks[s.topic][s.partition]
 			s.updateCommitted(block.Offset, block.Metadata)
 			break
 		case ErrUnknownTopicOrPartition, ErrNotLeaderForPartition, ErrLeaderNotAvailable:
@@ -488,7 +488,7 @@ func (bom *brokerOffsetManager) constructRequest() *OffsetCommitRequest {
 		s.lock.Unlock()
 	}
 
-	if len(r.blocks) > 0 {
+	if len(r.Blocks) > 0 {
 		return r
 	}
 
