@@ -24,7 +24,7 @@ func (r *ConsumerMetadataResponse) Decode(pd packetDecoder) (err error) {
 	if err := coordinator.Decode(pd); err != nil {
 		return err
 	}
-	if coordinator.addr == ":0" {
+	if coordinator.IAddr == ":0" {
 		return nil
 	}
 	r.Coordinator = coordinator

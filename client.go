@@ -585,9 +585,9 @@ func (client *client) tryRefreshMetadata(topics []string, attemptsRemaining int)
 
 	for broker := client.any(); broker != nil; broker = client.any() {
 		if len(topics) > 0 {
-			Logger.Printf("client/metadata fetching metadata for %v from broker %s\n", topics, broker.addr)
+			Logger.Printf("client/metadata fetching metadata for %v from broker %s\n", topics, broker.IAddr)
 		} else {
-			Logger.Printf("client/metadata fetching metadata for all topics from broker %s\n", broker.addr)
+			Logger.Printf("client/metadata fetching metadata for all topics from broker %s\n", broker.IAddr)
 		}
 		response, err := broker.GetMetadata(&MetadataRequest{Topics: topics})
 

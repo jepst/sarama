@@ -14,7 +14,7 @@ import (
 // Broker represents a single Kafka broker connection. All operations on this object are entirely concurrency-safe.
 type Broker struct {
 	id   int32
-	addr string
+	IAddr string
 
 	conf          *Config
 	correlationID int32
@@ -36,7 +36,7 @@ type ResponsePromise struct {
 // NewBroker creates and returns a Broker targetting the given host:port address.
 // This does not attempt to actually connect, you have to call Open() for that.
 func NewBroker(addr string) *Broker {
-	return &Broker{id: -1, addr: addr}
+	return &Broker{id: -1, IAddr: addr}
 }
 
 // Open tries to connect to the Broker if it is not already connected or connecting, but does not block
@@ -62,7 +62,7 @@ func (b *Broker) Open(conf *Config) error {
 
 	if b.conn != nil {
 		b.lock.Unlock()
-		Logger.Printf("Failed to connect to broker %s: %s\n", b.addr, ErrAlreadyConnected)
+		Logger.Printf("Failed to connect to broker %s: %s\n", b.IAddr, ErrAlreadyConnected)
 		return ErrAlreadyConnected
 	}
 
@@ -75,14 +75,14 @@ func (b *Broker) Open(conf *Config) error {
 		}
 
 		if conf.Net.TLS.Enable {
-			b.conn, b.connErr = tls.DialWithDialer(&dialer, "tcp", b.addr, conf.Net.TLS.Config)
+			b.conn, b.connErr = tls.DialWithDialer(&dialer, "tcp", b.IAddr, conf.Net.TLS.Config)
 		} else {
-			b.conn, b.connErr = dialer.Dial("tcp", b.addr)
+			b.conn, b.connErr = dialer.Dial("tcp", b.IAddr)
 		}
 		if b.connErr != nil {
 			b.conn = nil
 			atomic.StoreInt32(&b.opened, 0)
-			Logger.Printf("Failed to connect to broker %s: %s\n", b.addr, b.connErr)
+			Logger.Printf("Failed to connect to broker %s: %s\n", b.IAddr, b.connErr)
 			return
 		}
 
@@ -91,9 +91,9 @@ func (b *Broker) Open(conf *Config) error {
 		b.responses = make(chan ResponsePromise, b.conf.Net.MaxOpenRequests-1)
 
 		if b.id >= 0 {
-			Logger.Printf("Connected to broker at %s (registered as #%d)\n", b.addr, b.id)
+			Logger.Printf("Connected to broker at %s (registered as #%d)\n", b.IAddr, b.id)
 		} else {
-			Logger.Printf("Connected to broker at %s (unregistered)\n", b.addr)
+			Logger.Printf("Connected to broker at %s (unregistered)\n", b.IAddr)
 		}
 		go withRecover(b.responseReceiver)
 	})
@@ -131,9 +131,9 @@ func (b *Broker) Close() error {
 	atomic.StoreInt32(&b.opened, 0)
 
 	if err == nil {
-		Logger.Printf("Closed connection to broker %s\n", b.addr)
+		Logger.Printf("Closed connection to broker %s\n", b.IAddr)
 	} else {
-		Logger.Printf("Error while closing connection to broker %s: %s\n", b.addr, err)
+		Logger.Printf("Error while closing connection to broker %s: %s\n", b.IAddr, err)
 	}
 
 	return err
@@ -150,7 +150,7 @@ func (b *Broker) SetID(id int32) {
 
 // Addr returns the broker address as either retrieved from Kafka's metadata or passed to NewBroker.
 func (b *Broker) Addr() string {
-	return b.addr
+	return b.IAddr
 }
 
 func (b *Broker) GetMetadata(request *MetadataRequest) (*MetadataResponse, error) {
@@ -316,8 +316,8 @@ func (b *Broker) Decode(pd packetDecoder) (err error) {
 		return err
 	}
 
-	b.addr = net.JoinHostPort(host, fmt.Sprint(port))
-	if _, _, err := net.SplitHostPort(b.addr); err != nil {
+	b.IAddr = net.JoinHostPort(host, fmt.Sprint(port))
+	if _, _, err := net.SplitHostPort(b.IAddr); err != nil {
 		return err
 	}
 
@@ -326,7 +326,7 @@ func (b *Broker) Decode(pd packetDecoder) (err error) {
 
 func (b *Broker) Encode(pe packetEncoder) (err error) {
 
-	host, portstr, err := net.SplitHostPort(b.addr)
+	host, portstr, err := net.SplitHostPort(b.IAddr)
 	if err != nil {
 		return err
 	}
